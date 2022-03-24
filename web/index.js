@@ -5,10 +5,6 @@ const roomId = params.get("roomId") || document.getElementById("roomId").value;
 const userId = params.get("userId") || document.getElementById("userId").value;
 const userToken = params.get("userToken") || document.getElementById("userToken").value;
 
-if (autoStart) {
-  start();
-}
-
 // 视频配置
 let fps = 25;
 let videoCodecType = "avc1.42e01f"; // vp8, vp09.00.10.08, av1.xx
@@ -20,7 +16,7 @@ let userLastFrameStayDuration = 3000;
 let vencoder;
 
 // 音频配置
-let audioContext = autoStart ? new OfflineAudioContext() : new AudioContext();
+let audioContext = new AudioContext();
 let audioDest = audioContext.createMediaStreamDestination();
 let audioCodec = "opus";
 let audioChannels = 2;
@@ -30,9 +26,7 @@ let aencoder;
 // canvas配置
 var canvasWidth = 640;
 var canvasHeight = 480;
-var canvas = autoStart
-  ? new OffscreenCanvas()
-  : document.getElementById("canvas");
+var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
 canvas.width = canvasWidth;
 canvas.height = canvasHeight;
@@ -412,3 +406,8 @@ document.getElementById("control").addEventListener("click", async (e) => {
     e.target.innerText = "结束";
   }
 });
+
+
+if (autoStart) {
+    start();
+}
