@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<body>
+  <div
+    style="
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-around;
+      width: 1000px;
+      margin-bottom: 20px;
+    "
+  >
+    <div>
+      <span>APPID：</span
+      ><input type="text" id="appId" value="62219cffd73fb100c384b329" />
+    </div>
+    <div>
+      <span>房间号：</span><input type="text" id="roomId" value="test" />
+    </div>
+    <div>
+      <span>用户ID：</span><input type="text" id="userId" value="1100" />
+    </div>
+    <div>
+      <span>用户Token：</span><input type="text" id="userToken" value="" />
+    </div>
+    <button type="button" id="control">开始</button>
+  </div>
+  <canvas id="canvas"></canvas>
+  <script src="./lib/VRTC.min.js"></script>
+  <script src="./lib/flvmux.js"></script>
+  <script src="index.js"></script>
+</body>
