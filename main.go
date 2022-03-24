@@ -80,6 +80,7 @@ func main() {
 
 func startServer(server *http.Server) {
 	http.HandleFunc("/ws", stream)
+	http.Handle("/recording/", http.StripPrefix("/recording/", http.FileServer(http.Dir("./recording"))))
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 
 	log.Println("http server at", server.Addr)
