@@ -30,7 +30,7 @@ canvas.height = canvasHeight;
 var client = VRTC.createClient({});
 var vframes = [];
 var started = false;
-var layouts = new Map();
+var layouts = [];
 var mixStarted = false;
 var mixedVideoTrack;
 var mixedAudioTrack;
@@ -42,7 +42,7 @@ var startAt;
 function onJoined(uid) {
   console.log("joined", uid);
   client.on("stream-added", handleStreamAdd);
-  client.on("stream-subscribed", handlelayoutsubscribed);
+  client.on("stream-subscribed", handleStreamSubscribed);
   client.on("stream-removed", handleStreamRemove);
 }
 
@@ -50,15 +50,15 @@ function handleStreamAdd(event) {
   client.subscribe(event.stream);
 }
 
-async function handlelayoutsubscribed(event) {
+async function handleStreamSubscribed(event) {
   const stream = event.stream;
 
   // fix: the subscribed stream event notified twice
-  if (layouts.has(stream.getId())) {
+  if (layouts.find(layout => layout.streamId === stream.getId())) {
     return;
   }
 
-  layouts.set(stream.getId(), { lastFrameTime: 0 });
+  layouts.push({streamId: stream.getId(), lastFrameTime: 0});
   updateLayout(layouts);
 
   console.log("stream subscribed", stream.getId());
@@ -77,7 +77,7 @@ async function handlelayoutsubscribed(event) {
     const a = new Audio();
     a.srcObject = audioStream; // this workarounds the issue
 
-    readAudioFrame(audioTrack);
+    readAudioData(audioTrack);
   }
 
   if (!mixStarted) {
@@ -95,13 +95,13 @@ async function handlelayoutsubscribed(event) {
 }
 
 function handleStreamRemove(event) {
-  layouts.delete(event.stream.getId());
+  layouts = layouts.filter(layout => layout.streamId !== event.stream.getId());
   updateLayout(layouts);
 }
 
 function drawCanvas() {
   vframes.forEach((record) => {
-    const layout = layouts.get(record.streamId);
+    const layout = layouts.find(layout => layout.streamId === record.streamId);
     if (layout) {
       layout.lastFrameTime = Date.now();
       context.drawImage(
@@ -117,7 +117,7 @@ function drawCanvas() {
 
   vframes = [];
 
-  Array.from(layouts.values()).forEach((layout) => {
+  layouts.forEach((layout) => {
     if (Date.now() - layout.lastFrameTime > userLastFrameStayDuration) {
       context.fillStyle = "#ff0000";
       context.fillRect(layout.x, layout.y, layout.width, layout.height);
@@ -135,7 +135,7 @@ function drawCanvas() {
 }
 
 function updateLayout(layouts) {
-  const num = layouts.size;
+  const num = layouts.length;
   let rows = Math.ceil(Math.sqrt(num));
   let cols = rows;
 
@@ -146,18 +146,15 @@ function updateLayout(layouts) {
   const width = parseInt(canvasWidth / cols, 10);
   const height = parseInt(canvasHeight / rows, 10);
 
-  Array.from(layouts.values()).forEach((layout, i) => {
-    const x = width * (i % cols);
-    const y = height * (i % rows);
-
+  layouts.forEach((layout, i) => {
     layout.x = width * (i % cols);
-    layout.y = height * (i % rows);
+    layout.y = height * Math.floor(i / rows);
     layout.width = width;
     layout.height = height;
   });
 }
 
-async function readAudioFrame(audioTrack) {
+async function readAudioData(audioTrack) {
   const processor = new MediaStreamTrackProcessor(audioTrack);
   const reader = processor.readable.getReader();
 
@@ -394,7 +391,7 @@ async function stop() {
   vframes = [];
   started = false;
   mixStarted = false;
-  layouts = new Map();
+  layouts = [];
 
   ws.close();
 
