@@ -1,9 +1,5 @@
 const params = new URLSearchParams(location.search);
 const autoStart = params.has("autoStart");
-const appId = params.get("appId") || document.getElementById("appId").value;
-const roomId = params.get("roomId") || document.getElementById("roomId").value;
-const userId = params.get("userId") || document.getElementById("userId").value;
-const userToken = params.get("userToken") || document.getElementById("userToken").value;
 
 // 视频配置
 let fps = 25;
@@ -42,11 +38,6 @@ var canvasTimer;
 var ws;
 var mux;
 var startAt;
-
-function ready() {
-  console.log("ready");
-  client.join(userToken, roomId, userId, onJoined, (err) => alert(`${err}`));
-}
 
 function onJoined(uid) {
   console.log("joined", uid);
@@ -312,7 +303,7 @@ function initMux(ws) {
 }
 
 function sendData(data) {
-  if (ws && ws.readyState === WebSocket.OPEN && !mux) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(data);
   }
 }
@@ -353,7 +344,17 @@ async function start() {
   ws = new WebSocket("ws://" + location.host + "/ws");
   ws.onopen = () => {
     console.log("websocket opened");
+
     initMux(ws);
+
+    const appId = params.get("appId") || document.getElementById("appId").value;
+    const roomId =
+      params.get("roomId") || document.getElementById("roomId").value;
+    const userId =
+      params.get("userId") || document.getElementById("userId").value;
+    const userToken =
+      params.get("userToken") || document.getElementById("userToken").value;
+
     client.init(appId, () => {
       client.join(userToken, roomId, userId, onJoined, (err) =>
         alert(`${err}`)
@@ -364,6 +365,7 @@ async function start() {
     console.log("websocket closed");
   };
 
+  started = true;
   startAt = Date.now();
 }
 
@@ -387,7 +389,12 @@ async function stop() {
   aencoder.close();
   vencoder.close();
 
-  layouts.clear();
+  audioContext = new AudioContext();
+  audioDest = audioContext.createMediaStreamDestination();
+  vframes = [];
+  started = false;
+  mixStarted = false;
+  layouts = new Map();
 
   ws.close();
 
@@ -396,18 +403,14 @@ async function stop() {
 
 document.getElementById("control").addEventListener("click", async (e) => {
   if (started) {
-    started = false;
     e.target.innerText = "开始";
-    e.target.disabled = true;
     await stop();
   } else {
     await start();
-    started = true;
     e.target.innerText = "结束";
   }
 });
 
-
 if (autoStart) {
-    start();
+  start();
 }
